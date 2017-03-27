@@ -1,0 +1,9 @@
+[package]
+name = "train-dijkstra-demo"
+version = "0.1.0"
+authors = ["naoyoshi <naoyoshi0511@gmail.com>"]
+
+[dependencies]
+serde = "0.9"
+serde_json = "0.9"
+serde_derive = "0.9"

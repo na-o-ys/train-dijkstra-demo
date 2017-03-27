@@ -1,0 +1,22 @@
+[
+  {
+    "station": "武蔵小金井",
+    "rows": [
+      {
+        "station_to": "東小金井",
+        "depart_time": "0930",
+        "arrive_time": "0933"
+      }
+    ]
+  },
+  {
+    "station": "東小金井",
+    "rows": [
+      {
+        "station_to": "武蔵境",
+        "depart_time": "0933",
+        "arrive_time": "0935"
+      }
+    ]
+  }
+]
