@@ -4,6 +4,7 @@
     "rows": [
       {
         "station_to": "東小金井",
+        "line": "中央線快速(上り)",
         "depart_time": "0930",
         "arrive_time": "0933"
       }
@@ -14,6 +15,7 @@
     "rows": [
       {
         "station_to": "武蔵境",
+        "line": "中央線快速(上り)",
         "depart_time": "0933",
         "arrive_time": "0935"
       }

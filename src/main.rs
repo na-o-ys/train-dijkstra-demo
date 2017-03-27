@@ -5,19 +5,86 @@ extern crate serde_json;
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 use std::collections::HashMap;
-use std::collections::HashSet;
-use serde_json::Value;
 use std::fs::File;
 use std::io::BufReader;
 
-#[derive(Eq, PartialEq, Debug)]
+fn main() {
+    let timetable = TimeTable::read_file();
+    println!("{:?}", &timetable);
+    let result = dijkstra(Time { hour: 8, min: 5 }, "武蔵小金井".to_string(), "武蔵境".to_string(), &timetable);
+    println!("{:?}", result);
+}
+
+fn dijkstra(time: Time, start: String, goal: String, timetable: &TimeTable) -> Option<Vec<Node>> {
+    let mut heap = BinaryHeap::new();
+    {
+        let initial_node = Node { station_to: start, arrive_time: time, depart_time: time, station_from: "".to_string(), line: "".to_string() };
+        heap.push(initial_node);
+    }
+
+    let mut visited = HashMap::new();
+    while let Some(node) = heap.pop() {
+        // the first access to the station
+        visited.insert(node.station_to.clone(), node.clone());
+
+        if node.station_to == goal {
+            return Some(reproduce_route(&visited, goal));
+        }
+
+        // 1-hop reachable nodes
+        for n in reachable_nodes(&node, timetable) {
+            if !visited.contains_key(&n.station_to) {
+                heap.push(n);
+            }
+        }
+    }
+    None
+}
+
+fn reachable_nodes(node: &Node, timetable: &TimeTable) -> Vec<Node> {
+    // station を time 以降に出発する全ての便について, 1-hop で到達する station
+    let mut nodes = vec![];
+    if let Some(rows) = timetable.station(&node.station_to) {
+        for row in rows {
+            if row.depart_time >= node.arrive_time {
+                nodes.push(Node {
+                    station_to: row.station_to.clone(),
+                    station_from: node.station_to.clone(),
+                    depart_time: row.depart_time,
+                    arrive_time: row.arrive_time,
+                    line: row.line.clone()
+                });
+            }
+        }
+    }
+    nodes
+}
+
+fn reproduce_route(visited: &HashMap<String, Node>, goal: String) -> Vec<Node> {
+    let mut result = vec![];
+    {
+        let mut st = &goal;
+        while let Some(node) = visited.get(st) {
+            st = &node.station_from;
+            result.push(node.clone());
+        }
+    }
+    result.reverse();
+    result
+}
+
+#[derive(Clone, Eq, PartialEq, Debug)]
 struct Node {
-    reach: Reach,
+    station_to: String,
+    station_from: String,
+    depart_time: Time,
+    arrive_time: Time,
+    line: String
 }
 
 impl Ord for Node {
     fn cmp(&self, other: &Node) -> Ordering {
-        other.reach.time.cmp(&self.reach.time)
+        other.arrive_time.cmp(&self.arrive_time)
     }
 }
 
@@ -25,12 +92,6 @@ impl PartialOrd for Node {
     fn partial_cmp(&self, other: &Node) -> Option<Ordering> {
         Some(self.cmp(other))
     }
-}
-
-#[derive(Eq, PartialEq, Debug)]
-struct Reach {
-    station: String,
-    time: Time,
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
@@ -51,43 +112,6 @@ impl PartialOrd for Time {
     fn partial_cmp(&self, other: &Time) -> Option<Ordering> {
         Some(self.cmp(other))
     }
-}
-
-fn dijkstra(start: Reach, goal: String, timetable: &TimeTable) -> Option<Node> {
-    let mut heap = BinaryHeap::new();
-    {
-        let initial_node = Node { reach: start };
-        heap.push(initial_node);
-    }
-
-    let mut visited = HashSet::new();
-    while let Some(node) = heap.pop() {
-        // the first access to the station
-        visited.insert(node.reach.station.clone());
-
-        if node.reach.station == goal { return Some(node); }
-
-        // 1-hop reachable nodes
-        for n in reachable_nodes(&node.reach, timetable) {
-            if !visited.contains(&n.reach.station) {
-                heap.push(n);
-            }
-        }
-    }
-    None
-}
-
-fn reachable_nodes(reach: &Reach, timetable: &TimeTable) -> Vec<Node> {
-    // station を time 以降に出発する全ての便について, 1-hop で到達する station
-    let mut nodes = vec![];
-    if let Some(rows) = timetable.station(&reach.station) {
-        for row in rows {
-            if row.depart_time >= reach.time {
-                nodes.push(Node { reach: Reach { station: row.station_to.clone(), time: row.arrive_time } });
-            }
-        }
-    }
-    nodes
 }
 
 #[derive(Debug)]
@@ -119,6 +143,7 @@ impl StationTimeTableJson {
 #[derive(Deserialize)]
 struct TimeTableRowJson {
     station_to: String,
+    line: String,
     depart_time: String,
     arrive_time: String
 }
@@ -131,6 +156,7 @@ impl TimeTableRowJson {
         }
         TimeTableRow {
             station_to: self.station_to.clone(),
+            line: self.line.clone(),
             depart_time: timestr_to_time(&self.depart_time),
             arrive_time: timestr_to_time(&self.arrive_time)
         }
@@ -159,16 +185,7 @@ impl TimeTable {
 #[derive(Debug)]
 struct TimeTableRow {
     station_to: String,
+    line: String,
     depart_time: Time,
     arrive_time: Time,
-}
-
-fn main() {
-    let time = Time { hour: 8, min: 5 };
-    let reach = Reach { station: "武蔵小金井".to_string(), time: time };
-    let node = Node { reach: reach };
-    let timetable = TimeTable::read_file();
-    println!("{:?}", &timetable);
-    let result = dijkstra(node.reach, "武蔵境".to_string(), &timetable);
-    println!("{:?}", result);
 }
