@@ -25,9 +25,9 @@ def gen_schedule(stations, line, interval, speed, schedule)
 end
 
 (4..24).each do |hour|
-  0.step(59, 5).each do |min|
+  0.step(59, 10).each do |min|
     (0..stations).each do |i|
-      schedule["S#{i}"] <<= []
+      schedule["S#{i}"] ||= []
       schedule["S#{i}"] << {
         station_to: "S#{rand(stations)}",
         line: "random",
