@@ -32,20 +32,23 @@ fn main() {
 
 /// start 駅を time 以降に出発して、goal 駅に到達する経路をダイクストラ法で求める
 fn dijkstra(time: Time, start: String, goal: String, timetable: &TimeTable) -> Option<Node> {
+    let mut visited = HashSet::new();
+
+    // 0. 隣接ノードを格納するキューを用意
     let mut heap = BinaryHeap::new();
-    // 初期ノード (出発時刻, 出発駅) を追加
+
+    // 1. 始点ノード (出発時刻, 出発駅) を追加
     heap.push(Node::initialize(time, &start));
 
-    // 到達済みフラグ
-    let mut visited = HashSet::new();
+    // 2. 最も距離が短い隣接ノードを取り出す
     while let Some(node) = heap.pop() {
-        // 到達済みフラグを立てる
+        // 3. 確定フラグを立てる
         visited.insert(node.station_to());
 
-        // ゴール駅に到達
+        // 4. 終点ノードなら終了
         if node.station_to() == goal { return Some(node); }
 
-        // 1-hop で到達可能なノードを列挙
+        // 5. 新たな隣接ノードを追加
         for next_node in reachable_nodes(&node, timetable) {
             if !visited.contains(&next_node.station_to()) {
                 heap.push(next_node);
