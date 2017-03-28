@@ -5,6 +5,7 @@ extern crate serde_json;
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::fs::File;
 use std::io::BufReader;
 
@@ -15,25 +16,20 @@ fn main() {
     println!("{:?}", result);
 }
 
-fn dijkstra(time: Time, start: String, goal: String, timetable: &TimeTable) -> Option<Vec<Node>> {
+fn dijkstra(time: Time, start: String, goal: String, timetable: &TimeTable) -> Option<Node> {
     let mut heap = BinaryHeap::new();
-    {
-        let initial_node = Node { station_to: start, arrive_time: time, depart_time: time, station_from: "".to_string(), line: "".to_string() };
-        heap.push(initial_node);
-    }
+    heap.push(Node::initialize(time, &start));
 
-    let mut visited = HashMap::new();
+    let mut visited = HashSet::new();
     while let Some(node) = heap.pop() {
         // the first access to the station
-        visited.insert(node.station_to.clone(), node.clone());
+        visited.insert(node.station_to());
 
-        if node.station_to == goal {
-            return Some(reproduce_route(&visited, goal));
-        }
+        if node.station_to() == goal { return Some(node); }
 
         // 1-hop reachable nodes
         for n in reachable_nodes(&node, timetable) {
-            if !visited.contains_key(&n.station_to) {
+            if !visited.contains(&n.station_to()) {
                 heap.push(n);
             }
         }
@@ -41,50 +37,65 @@ fn dijkstra(time: Time, start: String, goal: String, timetable: &TimeTable) -> O
     None
 }
 
+// station を time 以降に出発する全ての便について, 1-hop で到達する station
 fn reachable_nodes(node: &Node, timetable: &TimeTable) -> Vec<Node> {
-    // station を time 以降に出発する全ての便について, 1-hop で到達する station
     let mut nodes = vec![];
-    if let Some(rows) = timetable.station(&node.station_to) {
+    if let Some(rows) = timetable.station(&node.station_to()) {
         for row in rows {
-            if row.depart_time >= node.arrive_time {
-                nodes.push(Node {
+            if row.depart_time >= node.arrive_time() {
+                nodes.push(node.forward(RouteInfo {
                     station_to: row.station_to.clone(),
-                    station_from: node.station_to.clone(),
+                    station_from: node.station_to(),
                     depart_time: row.depart_time,
                     arrive_time: row.arrive_time,
                     line: row.line.clone()
-                });
+                }));
             }
         }
     }
     nodes
 }
 
-fn reproduce_route(visited: &HashMap<String, Node>, goal: String) -> Vec<Node> {
-    let mut result = vec![];
-    {
-        let mut st = &goal;
-        while let Some(node) = visited.get(st) {
-            st = &node.station_from;
-            result.push(node.clone());
-        }
-    }
-    result.reverse();
-    result
-}
-
 #[derive(Clone, Eq, PartialEq, Debug)]
-struct Node {
-    station_to: String,
-    station_from: String,
-    depart_time: Time,
-    arrive_time: Time,
-    line: String
+struct Node(Vec<RouteInfo>);
+
+impl Node {
+    fn new(route: RouteInfo) -> Node {
+        Node(vec![route])
+    }
+
+    fn initialize(time: Time, station: &String) -> Node {
+        Node::new(RouteInfo {
+            station_from: String::new(),
+            station_to: station.clone(),
+            arrive_time: time,
+            depart_time: time,
+            line: String::new()
+        })
+    }
+
+    fn curr(&self) -> &RouteInfo {
+        self.0.last().unwrap()
+    }
+
+    fn station_to(&self) -> String {
+        self.curr().station_to.clone()
+    }
+
+    fn arrive_time(&self) -> Time {
+        self.curr().arrive_time
+    }
+
+    fn forward(&self, route: RouteInfo) -> Node {
+        let mut node = self.clone();
+        node.0.push(route);
+        node
+    }
 }
 
 impl Ord for Node {
     fn cmp(&self, other: &Node) -> Ordering {
-        other.arrive_time.cmp(&self.arrive_time)
+        other.arrive_time().cmp(&self.arrive_time())
     }
 }
 
@@ -92,6 +103,15 @@ impl PartialOrd for Node {
     fn partial_cmp(&self, other: &Node) -> Option<Ordering> {
         Some(self.cmp(other))
     }
+}
+
+#[derive(Clone, Eq, PartialEq, Debug)]
+struct RouteInfo {
+    station_from: String,
+    station_to: String,
+    depart_time: Time,
+    arrive_time: Time,
+    line: String
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
