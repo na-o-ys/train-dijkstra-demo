@@ -27,9 +27,10 @@ end
 (4..24).each do |hour|
   0.step(59, 10).each do |min|
     (0..stations).each do |i|
+      adjacent = [*0..1].map { rand(stations) }
       schedule["S#{i}"] ||= []
       schedule["S#{i}"] << {
-        station_to: "S#{rand(stations)}",
+        station_to: "S#{adjacent.sample}",
         line: "random",
         depart_time: timeformat(hour, min),
         arrive_time: timeformat(hour, min + 3)

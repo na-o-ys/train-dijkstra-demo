@@ -17,17 +17,19 @@ use timetable::TimeTable;
 fn main() {
     let timetable = TimeTable::read_file("timetable.json");
 
-    println!("\n出発駅:");
-    let start = read_line();
-    println!("\n到着駅:");
-    let goal = read_line();
-    println!("\n出発時刻:");
-    let time = read_line().parse().unwrap();
+    while true {
+        println!("\n出発駅:");
+        let start = read_line();
+        println!("\n到着駅:");
+        let goal = read_line();
+        println!("\n出発時刻:");
+        let time = read_line().parse().unwrap();
 
-    let result = dijkstra(time, start, goal, &timetable);
-    if let Some(node) = result {
-        print_result(&node);
-    }
+        let result = dijkstra(time, start, goal, &timetable);
+        if let Some(node) = result {
+            print_result(&node);
+        }
+    }    
 }
 
 /// start 駅を time 以降に出発して、goal 駅に到達する経路をダイクストラ法で求める
@@ -63,7 +65,7 @@ fn reachable_nodes(node: &Node, timetable: &TimeTable) -> Vec<Node> {
     let mut nodes = vec![];
     if let Some(rows) = timetable.station(&node.station_to()) {
         for row in rows {
-            if row.depart_time >= node.arrive_time() {
+            if row.depart_time >= node.arrive_time() && row.depart_time.hour - node.arrive_time().hour < 2 {
                 nodes.push(node.forward(RouteInfo {
                     station_to: row.station_to.clone(),
                     station_from: node.station_to(),
