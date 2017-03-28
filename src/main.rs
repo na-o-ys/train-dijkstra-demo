@@ -25,9 +25,12 @@ fn main() {
     let time = read_line().parse().unwrap();
 
     let result = dijkstra(time, start, goal, &timetable);
-    println!("{:?}", result);
+    if let Some(node) = result {
+        print_result(&node);
+    }
 }
 
+/// start 駅を time 以降に出発して、goal 駅に到達する経路をダイクストラ法で求める
 fn dijkstra(time: Time, start: String, goal: String, timetable: &TimeTable) -> Option<Node> {
     let mut heap = BinaryHeap::new();
     // 初期ノード (出発時刻, 出発駅) を追加
@@ -52,7 +55,7 @@ fn dijkstra(time: Time, start: String, goal: String, timetable: &TimeTable) -> O
     None
 }
 
-// station を time 以降に出発する全ての便について, 1-hop で到達する駅
+/// station を time 以降に出発して 1-hop で到達可能な駅を列挙する
 fn reachable_nodes(node: &Node, timetable: &TimeTable) -> Vec<Node> {
     let mut nodes = vec![];
     if let Some(rows) = timetable.station(&node.station_to()) {
@@ -69,6 +72,16 @@ fn reachable_nodes(node: &Node, timetable: &TimeTable) -> Vec<Node> {
         }
     }
     nodes
+}
+
+fn print_result(result: &Node) {
+    for route in result.vec() {
+        if !route.station_from.is_empty() {
+            println!("{} {}\t{}", route.depart_time, &route.station_from, &route.line);
+        }
+    }
+    let last = result.vec().last().unwrap();
+    println!("{} {}", last.arrive_time, &last.station_to);
 }
 
 fn read_line() -> String {

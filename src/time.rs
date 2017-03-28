@@ -1,6 +1,7 @@
 use std::cmp::Ordering;
 use std::str::FromStr;
 use std::num::ParseIntError;
+use std::fmt;
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub struct Time {
@@ -28,5 +29,11 @@ impl FromStr for Time {
         s.parse::<u32>().map(|v|
             Time { hour: v / 100, min: v % 100 }
         )
+    }
+}
+
+impl fmt::Display for Time {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:02}:{:02}", self.hour, self.min)
     }
 }

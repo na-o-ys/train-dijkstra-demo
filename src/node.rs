@@ -42,6 +42,10 @@ impl Node {
         node
     }
 
+    pub fn vec(&self) -> &Vec<RouteInfo> {
+        &self.0
+    }
+
     fn curr(&self) -> &RouteInfo {
         self.0.last().unwrap()
     }
